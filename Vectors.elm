@@ -128,19 +128,6 @@ view model =
         ]
 
 
-toBool : String -> Maybe Bool
-toBool string =
-    case String.toUpper string of
-        "TRUE" ->
-            Just True
-
-        "FALSE" ->
-            Just False
-
-        _ ->
-            Nothing
-
-
 toMaybe : Result String a -> Maybe a
 toMaybe result =
     case result of
