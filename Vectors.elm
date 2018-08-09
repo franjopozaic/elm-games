@@ -2,11 +2,8 @@ module Main exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (..)
 import List
 import Random
-import Svg exposing (..)
-import Svg.Attributes exposing (..)
 import Time exposing (millisecond, second, Time)
 import Debug
 import VectorsModels exposing (..)
@@ -20,6 +17,7 @@ type alias Model =
     }
 
 
+main : Program Never Model Msg
 main =
     Html.program
         { init = init
@@ -40,15 +38,21 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Tick time ->
-            ( { model | objects = List.map moveObject model.objects }, Cmd.none )
+            ( { model | objects = List.map (moveObject model.settings.isBounded) model.objects }, Cmd.none )
+
+        AddObjectManual ->
+            ( model, Random.generate AddObject (generateObject model.settings) )
 
         CheckObjects time ->
             let
                 newObjects =
-                    model.objects
-                        |> List.filter isInBounds
+                    if (model.settings.isBounded) then
+                        model.objects
+                    else
+                        model.objects
+                            |> List.filter isInBounds
             in
-                if ((List.length newObjects) < 4000) then
+                if ((List.length newObjects) < model.settings.maxNumberOfObjects) then
                     ( { model | objects = newObjects }, Random.generate AddObject (generateObject model.settings) )
                 else
                     ( { model | objects = newObjects }, Cmd.none )
@@ -73,6 +77,17 @@ update msg model =
 
                 newSettings =
                     case changeType of
+                        MaxNumberOfObjects ->
+                            case settingValueInt of
+                                Just value ->
+                                    { settings | maxNumberOfObjects = value }
+
+                                Nothing ->
+                                    settings
+
+                        IsBounded ->
+                            { settings | isBounded = not settings.isBounded }
+
                         MinSize ->
                             { settings | sizeRange = updateIntRange ( settingValueInt, Nothing ) settings.sizeRange }
 
@@ -111,6 +126,19 @@ view model =
         [ renderSvg model.objects
         , div [] [ renderSettings model.settings ]
         ]
+
+
+toBool : String -> Maybe Bool
+toBool string =
+    case String.toUpper string of
+        "TRUE" ->
+            Just True
+
+        "FALSE" ->
+            Just False
+
+        _ ->
+            Nothing
 
 
 toMaybe : Result String a -> Maybe a
@@ -159,17 +187,45 @@ isInBounds : MovingObject -> Bool
 isInBounds obj =
     case obj.object of
         Circle info ->
-            not (info.x < -40 || info.y < -40 || info.x > boxHeight + 40 || info.y > boxWidth + 40)
+            (info.x > 0 && info.y > 0 && info.x < boxWidth && info.y < boxHeight)
 
 
-moveObject : MovingObject -> MovingObject
-moveObject movingObject =
+moveObject : Bool -> MovingObject -> MovingObject
+moveObject isBounded movingObject =
     case movingObject.object of
         Circle info ->
-            { movingObject
-                | object =
-                    Circle (getCircleAtNextPosition (calculateOffset movingObject.gradient movingObject.velocity) info)
-            }
+            case isBounded of
+                True ->
+                    case (isInBounds movingObject) of
+                        True ->
+                            { movingObject
+                                | object =
+                                    Circle (getCircleAtNextPosition (calculateOffset movingObject.gradient movingObject.velocity) info)
+                            }
+
+                        False ->
+                            let
+                                newGradient =
+                                    -1 * movingObject.gradient
+
+                                newVelocity =
+                                    if (info.x == 0 || info.x == boxWidth) then
+                                        -1 * movingObject.velocity
+                                    else
+                                        movingObject.velocity
+                            in
+                                { movingObject
+                                    | object =
+                                        Circle (getCircleAtNextPosition (calculateOffset newGradient newVelocity) info)
+                                    , gradient = newGradient
+                                    , velocity = newVelocity
+                                }
+
+                False ->
+                    { movingObject
+                        | object =
+                            Circle (getCircleAtNextPosition (calculateOffset movingObject.gradient movingObject.velocity) info)
+                    }
 
 
 calculateOffset : Float -> Int -> ( Int, Int )
@@ -188,8 +244,18 @@ calculateOffset gradient velocity =
 
 
 getCircleAtNextPosition : ( Int, Int ) -> CircleInfo -> CircleInfo
-getCircleAtNextPosition ( xOffset, yOffset ) rect =
-    { rect
-        | x = rect.x + xOffset
-        , y = rect.y + yOffset
+getCircleAtNextPosition ( xOffset, yOffset ) circle =
+    { circle
+        | x = boundNumber ( 0, boxWidth ) (circle.x + xOffset)
+        , y = boundNumber ( 0, boxHeight ) (circle.y + yOffset)
     }
+
+
+boundNumber : ( comparable, comparable ) -> comparable -> comparable
+boundNumber ( min, max ) number =
+    if (number < min) then
+        min
+    else if (number > max) then
+        max
+    else
+        number

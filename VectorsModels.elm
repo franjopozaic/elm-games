@@ -7,6 +7,7 @@ type Msg
     = Tick Time
     | CheckObjects Time
     | AddObject MovingObject
+    | AddObjectManual
     | SettingsChange ChangeType String
 
 
@@ -25,6 +26,8 @@ type alias Settings =
     { sizeRange : IntRange
     , gradientRange : FloatRange
     , velocityRange : IntRange
+    , maxNumberOfObjects : Int
+    , isBounded : Bool
     }
 
 
@@ -54,6 +57,8 @@ type ChangeType
     | MaxVelocity
     | MinGradient
     | MaxGradient
+    | MaxNumberOfObjects
+    | IsBounded
 
 
 initMovingObjects : List MovingObject
@@ -66,6 +71,8 @@ initialSettings =
     { sizeRange = { min = 1, max = 3 }
     , velocityRange = { min = 1, max = 30 }
     , gradientRange = { min = -3.0, max = 3.0 }
+    , maxNumberOfObjects = 4
+    , isBounded = False
     }
 
 

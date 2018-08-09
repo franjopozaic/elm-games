@@ -38,22 +38,22 @@ randomPoint =
 
 randomPointOnLeftWall : Random.Generator ( Int, Int )
 randomPointOnLeftWall =
-    Random.map (\y -> ( 0, y )) (Random.int 0 boxHeight)
+    Random.map (\y -> ( 1, y )) (Random.int 0 boxHeight)
 
 
 randomPointOnRightWall : Random.Generator ( Int, Int )
 randomPointOnRightWall =
-    Random.map (\y -> ( boxWidth, y )) (Random.int 0 boxHeight)
+    Random.map (\y -> ( boxWidth - 1, y )) (Random.int 0 boxHeight)
 
 
 randomPointOnTopWall : Random.Generator ( Int, Int )
 randomPointOnTopWall =
-    Random.map (\x -> ( x, 0 )) (Random.int 0 boxHeight)
+    Random.map (\x -> ( x, 1 )) (Random.int 0 boxHeight)
 
 
 randomPointOnBottomWall : Random.Generator ( Int, Int )
 randomPointOnBottomWall =
-    Random.map (\x -> ( x, boxHeight )) (Random.int 0 boxHeight)
+    Random.map (\x -> ( x, boxHeight - 1 )) (Random.int 0 boxHeight)
 
 
 randomVelocity : IntRange -> Random.Generator Int
